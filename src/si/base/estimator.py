@@ -1,62 +1,33 @@
-from abc import abstractmethod, ABCMeta
+from abc import ABC, abstractmethod
 
 from si.data.dataset import Dataset
 
 
-class Estimator(metaclass=ABCMeta):
+class Estimator(ABC):
     """
-    Abstract base class for estimators.
-    An estimator is an object that can be fitted to a Dataset object.
+    Classe base para qualquer objeto que "aprenda" a partir de dados.
     """
 
     def __init__(self, **kwargs):
-        """
-        Initialize the estimator.
-        """
-        self._is_fitted = False
-
-    def fit(self, dataset: Dataset) -> 'Estimator':
-        """
-        Fit the estimator to the data.
-
-        Parameters
-        ----------
-        dataset: Dataset
-            The dataset to fit the estimator to.
-
-        Returns
-        -------
-        self: Estimator
-            The fitted estimator.
-        """
-        self._fit(dataset)
-        self._is_fitted = True
-        return self
+        self.is_fitted = False
 
     @abstractmethod
-    def _fit(self, dataset: Dataset) -> 'Estimator':
+    def _fit(self, dataset: Dataset):
         """
-        Fit the estimator to the data.
-        Abstract method that needs to be implemented by all subclasses.
+        Método abstrato responsável por estimar os parâmetros a partir
+        dos dados. Deve ser implementado por todas as classes que
+        estendem o Estimator.
+        """
+        raise NotImplementedError
 
-        Parameters
-        ----------
-        dataset: Dataset
-            The dataset to fit the estimator to.
+    def fit(self, dataset: Dataset):
+        """
+        Ajusta o estimador ao dataset fornecido (chama _fit).
 
         Returns
         -------
         self: Estimator
-            The fitted estimator.
         """
-
-    def is_fitted(self) -> bool:
-        """
-        Whether the estimator is fitted.
-
-        Returns
-        -------
-        is_fitted: bool
-            Whether the estimator is fitted.
-        """
-        return hasattr(self, '_is_fitted') and self._is_fitted
+        self._fit(dataset)
+        self.is_fitted = True
+        return self

@@ -1,216 +1,154 @@
-from typing import Tuple, Sequence, Union
-
 import numpy as np
 import pandas as pd
 
 
 class Dataset:
-    def __init__(self, X: np.ndarray, y: np.ndarray = None, features: Sequence[str] = None, label: str = None) -> None:
-        """
-        Dataset represents a tabular dataset for single output classification.
+    """
+    Representa um dataset de Machine Learning, guardando a matriz de
+    features (X), o vetor da variável dependente (y), os nomes das
+    features e o nome do label.
+    """
 
+    def __init__(self, X: np.ndarray, y: np.ndarray = None,
+                 features: list = None, label: str = None):
+        """
         Parameters
         ----------
-        X: numpy.ndarray (n_samples, n_features)
-            The feature matrix
-        y: numpy.ndarray (n_samples, 1)
-            The label vector
-        features: list of str (n_features)
-            The feature names
-        label: str (1)
-            The label name
+        X: np.ndarray
+            Matriz/tabela de features (variáveis independentes).
+        y: np.ndarray
+            Vetor da variável dependente.
+        features: list
+            Vetor com os nomes das features.
+        label: str
+            Nome da variável dependente.
         """
         if X is None:
-            raise ValueError("X cannot be None")
-        if y is not None and len(X) != len(y):
-            raise ValueError("X and y must have the same length")
-        if features is not None and len(X[0]) != len(features):
-            raise ValueError("Number of features must match the number of columns in X")
+            raise ValueError("X não pode ser None")
+
         if features is None:
-            features = [f"feat_{str(i)}" for i in range(X.shape[1])]
+            features = [f"feat_{i}" for i in range(X.shape[1])]
+        else:
+            features = list(features)
+
         if y is not None and label is None:
             label = "y"
+
         self.X = X
         self.y = y
         self.features = features
         self.label = label
 
-    def shape(self) -> Tuple[int, int]:
-        """
-        Returns the shape of the dataset
-        Returns
-        -------
-        tuple (n_samples, n_features)
-        """
+    @property
+    def shape(self) -> tuple:
+        """Devolve a dimensão do dataset (n_samples, n_features)."""
         return self.X.shape
 
     def has_label(self) -> bool:
-        """
-        Returns True if the dataset has a label
-        Returns
-        -------
-        bool
-        """
+        """Verifica se o dataset tem variável dependente (y)."""
         return self.y is not None
 
     def get_classes(self) -> np.ndarray:
-        """
-        Returns the unique classes in the dataset
-        Returns
-        -------
-        numpy.ndarray (n_classes)
-        """
-        if self.has_label():
-            return np.unique(self.y)
-        else:
-            raise ValueError("Dataset does not have a label")
+        """Devolve as classes possíveis do dataset (valores únicos de y)."""
+        if not self.has_label():
+            raise ValueError("O dataset não tem y (label)")
+        return np.unique(self.y)
 
     def get_mean(self) -> np.ndarray:
-        """
-        Returns the mean of each feature
-        Returns
-        -------
-        numpy.ndarray (n_features)
-        """
+        """Devolve a média de cada feature."""
         return np.nanmean(self.X, axis=0)
 
     def get_variance(self) -> np.ndarray:
-        """
-        Returns the variance of each feature
-        Returns
-        -------
-        numpy.ndarray (n_features)
-        """
+        """Devolve a variância de cada feature."""
         return np.nanvar(self.X, axis=0)
 
     def get_median(self) -> np.ndarray:
-        """
-        Returns the median of each feature
-        Returns
-        -------
-        numpy.ndarray (n_features)
-        """
+        """Devolve a mediana de cada feature."""
         return np.nanmedian(self.X, axis=0)
 
     def get_min(self) -> np.ndarray:
-        """
-        Returns the minimum of each feature
-        Returns
-        -------
-        numpy.ndarray (n_features)
-        """
+        """Devolve o valor mínimo de cada feature."""
         return np.nanmin(self.X, axis=0)
 
     def get_max(self) -> np.ndarray:
-        """
-        Returns the maximum of each feature
-        Returns
-        -------
-        numpy.ndarray (n_features)
-        """
+        """Devolve o valor máximo de cada feature."""
         return np.nanmax(self.X, axis=0)
 
     def summary(self) -> pd.DataFrame:
+        """Devolve um pandas DataFrame com todas as métricas descritivas."""
+        return pd.DataFrame(
+            {
+                "mean": self.get_mean(),
+                "variance": self.get_variance(),
+                "median": self.get_median(),
+                "min": self.get_min(),
+                "max": self.get_max(),
+            },
+            index=self.features,
+        )
+
+    # ---------------------------------------------------------------
+    # Exercício 2: tratamento de valores nulos / remoção de amostras
+    # ---------------------------------------------------------------
+
+    def dropna(self):
         """
-        Returns a summary of the dataset
+        Remove todas as amostras (linhas) que contenham pelo menos um
+        valor nulo (NaN). Atualiza também o vetor y em conformidade.
+
         Returns
         -------
-        pandas.DataFrame (n_features, 5)
+        self: Dataset
         """
-        data = {
-            "mean": self.get_mean(),
-            "median": self.get_median(),
-            "min": self.get_min(),
-            "max": self.get_max(),
-            "var": self.get_variance()
-        }
-        return pd.DataFrame.from_dict(data, orient="index", columns=self.features)
+        mask = ~np.isnan(self.X).any(axis=1)
+        self.X = self.X[mask]
+        if self.y is not None:
+            self.y = self.y[mask]
+        return self
 
-    @classmethod
-    def from_dataframe(cls, df: pd.DataFrame, label: str = None):
+    def fillna(self, value):
         """
-        Creates a Dataset object from a pandas DataFrame
+        Substitui todos os valores nulos (NaN) por um valor fixo, pela
+        média ou pela mediana de cada feature.
 
         Parameters
         ----------
-        df: pandas.DataFrame
-            The DataFrame
-        label: str
-            The label name
+        value: float | str
+            Valor fixo a usar, ou "mean" / "median".
 
         Returns
         -------
-        Dataset
+        self: Dataset
         """
-        if label:
-            X = df.drop(label, axis=1).to_numpy()
-            y = df[label].to_numpy()
+        if value == "mean":
+            fill_values = self.get_mean()
+        elif value == "median":
+            fill_values = self.get_median()
         else:
-            X = df.to_numpy()
-            y = None
+            fill_values = np.full(self.X.shape[1], value)
 
-        features = df.columns.tolist()
-        return cls(X, y, features=features, label=label)
+        inds = np.where(np.isnan(self.X))
+        self.X[inds] = np.take(fill_values, inds[1])
+        return self
 
-    def to_dataframe(self) -> pd.DataFrame:
+    def remove_by_index(self, index: int):
         """
-        Converts the dataset to a pandas DataFrame
-
-        Returns
-        -------
-        pandas.DataFrame
-        """
-        if self.y is None:
-            return pd.DataFrame(self.X, columns=self.features)
-        else:
-            df = pd.DataFrame(self.X, columns=self.features)
-            df[self.label] = self.y
-            return df
-
-    @classmethod
-    def from_random(cls,
-                    n_samples: int,
-                    n_features: int,
-                    n_classes: int = 2,
-                    features: Sequence[str] = None,
-                    label: str = None):
-        """
-        Creates a Dataset object from random data
+        Remove uma amostra do dataset pelo seu índice. Atualiza também
+        o vetor y em conformidade.
 
         Parameters
         ----------
-        n_samples: int
-            The number of samples
-        n_features: int
-            The number of features
-        n_classes: int
-            The number of classes
-        features: list of str
-            The feature names
-        label: str
-            The label name
+        index: int
+            Índice da amostra a remover.
 
         Returns
         -------
-        Dataset
+        self: Dataset
         """
-        X = np.random.rand(n_samples, n_features)
-        y = np.random.randint(0, n_classes, n_samples)
-        return cls(X, y, features=features, label=label)
+        self.X = np.delete(self.X, index, axis=0)
+        if self.y is not None:
+            self.y = np.delete(self.y, index, axis=0)
+        return self
 
-
-if __name__ == '__main__':
-    X = np.array([[1, 2, 3], [4, 5, 6]])
-    y = np.array([1, 2])
-    features = np.array(['a', 'b', 'c'])
-    label = 'y'
-    dataset = Dataset(X, y, features, label)
-    print(dataset.shape())
-    print(dataset.has_label())
-    print(dataset.get_classes())
-    print(dataset.get_mean())
-    print(dataset.get_variance())
-    print(dataset.get_median())
-    print(dataset.get_min())
-    print(dataset.get_max())
-    print(dataset.summary())
+    def __repr__(self):
+        return f"Dataset(shape={self.shape}, label={self.label})"
