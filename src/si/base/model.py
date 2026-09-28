@@ -1,47 +1,107 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from si.base.estimator import Estimator
 from si.data.dataset import Dataset
 
 
-class Model(Estimator):
+class Model(Estimator, ABC):
     """
-    Classe base para modelos de Machine Learning (classificadores e
-    regressores). Um modelo é uma função matemática que, com base nas
-    features, faz previsões para amostras de um dataset.
+    Abstract base class for models.
+    A model is an object that can predict the target values of a Dataset object.
     """
 
+    def __init__(self, **kwargs):
+        """
+        Initialize the model.
+        """
+        super().__init__(**kwargs)
+
+    def predict(self, dataset):
+        """
+        Predict the target values of the dataset.
+        The model needs to be fitted before calling this method.
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to predict the target values of.
+
+        Returns
+        -------
+        predictions: np.ndarray
+            The predicted target values.
+        """
+        if not self.is_fitted():
+            raise ValueError('Model needs to be fitted before calling predict()')
+        return self._predict(dataset)
+
     @abstractmethod
-    def _predict(self, dataset: Dataset):
+    def _predict(self, dataset):
         """
-        Método abstrato responsável por prever valores/classes para
-        novas amostras. Deve ser implementado por todas as classes que
-        estendem o Model.
+        Predict the target values of the dataset.
+        Abstract method that needs to be implemented by all subclasses.
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to predict the target values of.
+
+        Returns
+        -------
+        predictions: np.ndarray
+            The predicted target values.
         """
-        raise NotImplementedError
+
+    def fit_predict(self, dataset):
+        """
+        Fit the model to the dataset and predict the target values.
+        Equivalent to calling fit(dataset) and then predict(dataset).
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to fit and predict the target values of.
+
+        Returns
+        -------
+        predictions: np.ndarray
+            The predicted target values.
+        """
+        self.fit(dataset)
+        return self.predict(dataset)
 
     @abstractmethod
     def _score(self, dataset: Dataset) -> float:
         """
-        Método abstrato responsável por calcular a métrica de erro do
-        modelo, com um Dataset como input.
-        """
-        raise NotImplementedError
+        Calculate the error metric of the model on the dataset.
+        Abstract method that needs to be implemented by all subclasses.
 
-    def predict(self, dataset: Dataset):
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to score the model on.
+
+        Returns
+        -------
+        score: float
+            The error metric (e.g., accuracy or rmse).
         """
-        Prevê valores/classes para o dataset fornecido (chama
-        _predict). Verifica primeiro se o modelo já foi ajustado.
-        """
-        if not self.is_fitted:
-            raise ValueError("O modelo ainda não foi ajustado (fit).")
-        return self._predict(dataset)
 
     def score(self, dataset: Dataset) -> float:
         """
-        Calcula a métrica de erro do modelo para o dataset fornecido.
-        Verifica se o modelo está ajustado e, se sim, chama _score.
+        Calculate the error metric of the model on the dataset.
+        The model needs to be fitted before calling this method.
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to score the model on.
+
+        Returns
+        -------
+        score: float
+            The error metric.
         """
-        if not self.is_fitted:
-            raise ValueError("O modelo ainda não foi ajustado (fit).")
+        if not self.is_fitted():
+            raise ValueError('Model needs to be fitted before calling score()')
         return self._score(dataset)

@@ -1,33 +1,62 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from si.data.dataset import Dataset
 
 
-class Estimator(ABC):
+class Estimator(metaclass=ABCMeta):
     """
-    Classe base para qualquer objeto que "aprenda" a partir de dados.
+    Abstract base class for estimators.
+    An estimator is an object that can be fitted to a Dataset object.
     """
 
     def __init__(self, **kwargs):
-        self.is_fitted = False
+        """
+        Initialize the estimator.
+        """
+        self._is_fitted = False
 
-    @abstractmethod
-    def _fit(self, dataset: Dataset):
+    def fit(self, dataset: Dataset) -> 'Estimator':
         """
-        Método abstrato responsável por estimar os parâmetros a partir
-        dos dados. Deve ser implementado por todas as classes que
-        estendem o Estimator.
-        """
-        raise NotImplementedError
+        Fit the estimator to the data.
 
-    def fit(self, dataset: Dataset):
-        """
-        Ajusta o estimador ao dataset fornecido (chama _fit).
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to fit the estimator to.
 
         Returns
         -------
         self: Estimator
+            The fitted estimator.
         """
         self._fit(dataset)
-        self.is_fitted = True
+        self._is_fitted = True
         return self
+
+    @abstractmethod
+    def _fit(self, dataset: Dataset) -> 'Estimator':
+        """
+        Fit the estimator to the data.
+        Abstract method that needs to be implemented by all subclasses.
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to fit the estimator to.
+
+        Returns
+        -------
+        self: Estimator
+            The fitted estimator.
+        """
+
+    def is_fitted(self) -> bool:
+        """
+        Whether the estimator is fitted.
+
+        Returns
+        -------
+        is_fitted: bool
+            Whether the estimator is fitted.
+        """
+        return hasattr(self, '_is_fitted') and self._is_fitted

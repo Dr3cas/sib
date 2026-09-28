@@ -6,28 +6,59 @@ from si.data.dataset import Dataset
 
 class Transformer(Estimator):
     """
-    Tipo específico de Estimator usado para modificar/transformar
-    dados (ex.: seleção de features).
+    Abstract base class for transformers.
+    A transformer is an object that can transform a Dataset object.
     """
+
+    def transform(self, dataset: Dataset) -> Dataset:
+        """
+        Transform the dataset.
+        The transformer needs to be fitted before calling this method.
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to transform.
+
+        Returns
+        -------
+        dataset: Dataset
+            The transformed dataset.
+        """
+        if not self.is_fitted():
+            raise ValueError('Transformer needs to be fitted before calling transform()')
+        return self._transform(dataset)
 
     @abstractmethod
     def _transform(self, dataset: Dataset) -> Dataset:
         """
-        Método abstrato responsável por transformar os dados. Deve ser
-        implementado por todas as classes que estendem o Transformer.
-        """
-        raise NotImplementedError
+        Transform the dataset.
+        Abstract method that needs to be implemented by all subclasses.
 
-    def transform(self, dataset: Dataset) -> Dataset:
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to transform.
+
+        Returns
+        -------
+        dataset: Dataset
+            The transformed dataset.
         """
-        Aplica a transformação aprendida aos dados (chama _transform).
-        """
-        return self._transform(dataset)
 
     def fit_transform(self, dataset: Dataset) -> Dataset:
         """
-        Ajusta o transformer aos dados e de seguida transforma-os
-        (chama fit e depois transform).
+        Fit the transformer to the dataset and transform it.
+        Equivalent to calling fit(dataset) and then transform(dataset).
+
+        Parameters
+        ----------
+        dataset: Dataset
+            The dataset to fit and transform.
+
+        Returns
+        -------
+        dataset: Dataset
+            The transformed dataset.
         """
-        self.fit(dataset)
-        return self.transform(dataset)
+        return self.fit(dataset).transform(dataset)

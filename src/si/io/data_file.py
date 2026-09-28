@@ -3,52 +3,49 @@ import numpy as np
 from si.data.dataset import Dataset
 
 
-def read_data_file(filename: str, sep: str = ",", label: bool = True) -> Dataset:
+def read_data_file(filename: str, sep: str = ',', label: bool = False) -> Dataset:
     """
-    Lê um ficheiro de dados genérico (sem cabeçalho) usando numpy e
-    devolve um objeto Dataset.
+    Reads a data file (no header) and returns a Dataset object.
 
     Parameters
     ----------
     filename: str
-        Nome/caminho do ficheiro.
+        Name/path of the file.
     sep: str
-        Separador de valores.
+        Value separator.
     label: bool
-        Se o ficheiro tem y (assume-se que é a última coluna).
+        Whether the file has a label (y). If True, it is assumed to be the last column.
 
     Returns
     -------
     Dataset
     """
-    raw = np.genfromtxt(filename, delimiter=sep)
+    data = np.genfromtxt(filename, delimiter=sep)
 
     if label:
-        X = raw[:, :-1]
-        y = raw[:, -1]
+        X = data[:, :-1]
+        y = data[:, -1]
     else:
-        X = raw
+        X = data
         y = None
 
-    return Dataset(X=X, y=y)
+    return Dataset(X, y)
 
 
-def write_data_file(filename: str, dataset: Dataset, sep: str = ",",
-                     label: bool = True) -> None:
+def write_data_file(filename: str, dataset: Dataset, sep: str = ',', label: bool = False) -> None:
     """
-    Escreve um objeto Dataset para um ficheiro de dados genérico usando
-    numpy.
+    Writes a Dataset object to a data file (no header).
 
     Parameters
     ----------
     filename: str
-        Nome/caminho do ficheiro.
+        Name/path of the file.
     dataset: Dataset
-        Objeto Dataset a escrever.
+        The dataset to write.
     sep: str
-        Separador de valores.
+        Value separator.
     label: bool
-        Se deve escrever y (última coluna).
+        Whether to write the label (y) as the last column.
     """
     if label and dataset.y is not None:
         data = np.column_stack((dataset.X, dataset.y))
